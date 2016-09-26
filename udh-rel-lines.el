@@ -3,7 +3,7 @@
 ;; Author: Murray Fordyce <undeadherbs@gmail.com>
 ;; URL:
 ;; Package-Version:
-;; Version: 0.1
+;; Version: 0.2
 ;; Package-Requires: ((emacs "24"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -34,10 +34,6 @@
 ;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;;; Code:
-
-;; So we can use it's dealing with emacs internals.
-(require 'relative-line-numbers)
-
 (defgroup udh-relative-line-numbers nil
   "Show relative line numbers in the margin at regular intervals."
   :group 'convenience

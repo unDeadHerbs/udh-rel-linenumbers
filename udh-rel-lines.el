@@ -1,8 +1,8 @@
 ;;; relative-line-numbers.el --- Display relative line numbers on the margin  -*- lexical-binding: t -*-
 
 ;; Author: Murray Fordyce <undeadherbs@gmail.com>
-;; URL: 
-;; Package-Version: 
+;; URL:
+;; Package-Version:
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "24"))
 
@@ -78,11 +78,13 @@ mode if ARG is omitted or nil, and toggle it if the ERG is `toggle'."
     (unless (minibufferp)
       (udh-relative-line-numbers-mode))))
 
+;;needs updating
 (defun udh-relative-line-numbers--on ()
   "Set up `udh-relative-line-numbers-mode'."
   (relative-line-numbers-mode 1)
   (setq relative-line-numbers-format 'udh-relative-line-numbers-format))
 
+;;needs updating
 (defun udh-relative-line-numbers--off ()
   "Tear down `udh-relative-line-numbers-mode'."
   (relative-line-numbers-mode 0)
@@ -91,11 +93,60 @@ mode if ARG is omitted or nil, and toggle it if the ERG is `toggle'."
 (defun udh-relative-line-numbers-mod (v)
     (= 0 (mod v udh-relative-line-numbers-mod-value)))
 
-(defun udh-relative-line-numbers-format (offset)
-  (if (funcall udh-relative-line-numbers-conditional offset)
-      (format (format " %%%ds"
-		      (length (number-to-string (1+ (count-lines (point-min) (point-max))))))
-	      (relative-line-numbers-default-format offset))
-    (concat "" (number-to-string (1+ (count-lines (point-min) (point)))) " ")))
+;;needs renaming
+(defun rpad (s n)
+  (if (>= (length s) n)
+      s
+    (concat (rpad s (- n 1)) " ")))
+
+(defun udh-linenumber-calc-fmt (line curline maxlen)
+  (if (funcall udh-relative-line-numbers-conditional (abs (- line curline)))
+      (format (format " %%%ds" maxlen) (abs (- line curline)))
+    (rpad (number-to-string line) (1+ maxlen))))
+
+(defun linum-update-window (win)
+  "Update line numbers for the portion visible in window WIN."
+  (let ((curline (line-number-at-pos))
+	(maxlen (length (number-to-string (count-lines (point-min) (point-max))))))
+    (goto-char (window-start win))
+    (let ((line (line-number-at-pos))
+	  (limit (window-end win t))
+	  (fmt (cond ((stringp linum-format) linum-format)
+		     ((eq linum-format 'dynamic)
+		      (let ((w (length (number-to-string
+					(count-lines (point-min) (point-max))))))
+			(concat "%" (number-to-string w) "d")))))
+	  (width 0))
+      (run-hooks 'linum-before-numbering-hook)
+      ;; Create an overlay (or reuse an existing one) for each
+      ;; line visible in this window, if necessary.
+      (while (and (not (eobp)) (< (point) limit))
+	(let* ((str (if fmt
+			(propertize (udh-linenumber-calc-fmt line curline maxlen) 'face 'linum)
+		      (funcall linum-format line)))
+	       (visited (catch 'visited
+			  (dolist (o (overlays-in (point) (point)))
+			    (when (equal-including-properties
+				   (overlay-get o 'linum-str) str)
+			      (unless (memq o linum-overlays)
+				(push o linum-overlays))
+			      (setq linum-available (delq o linum-available))
+			      (throw 'visited t))))))
+	  (setq width (max width (length str)))
+	  (unless visited
+	    (let ((ov (if (null linum-available)
+			  (make-overlay (point) (point))
+			(move-overlay (pop linum-available) (point) (point)))))
+	      (push ov linum-overlays)
+	      (overlay-put ov 'before-string
+			   (propertize " " 'display `((margin left-margin) ,str)))
+	      (overlay-put ov 'linum-str str))))
+	;; Text may contain those nasty intangible properties, but that
+	;; shouldn't prevent us from counting those lines.
+	(let ((inhibit-point-motion-hooks t))
+	  (forward-line))
+	(setq line (1+ line)))
+      (set-window-margins win width (cdr (window-margins win))))))
 
 (provide 'udh-relative-line-numbers)
+

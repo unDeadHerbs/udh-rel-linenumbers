@@ -1,4 +1,4 @@
-;;; relative-line-numbers.el --- Display relative line numbers on the margin  -*- lexical-binding: t -*-
+;;; udh-relative-line-numbers.el --- Display informative line numbers in the margin  -*- lexical-binding: t -*-
 
 ;; Author: Murray Fordyce <undeadherbs@gmail.com>
 ;; URL:

@@ -1,4 +1,4 @@
-;;; udh-relative-line-numbers.el --- Display informative line numbers in the margin  -*- lexical-binding: t -*-
+;;; udh-line-numbers.el --- Display informative line numbers in the margin  -*- lexical-binding: t -*-
 
 ;; Author: Murray Fordyce <undeadherbs@gmail.com>
 ;; URL:
@@ -34,24 +34,24 @@
 ;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ;;; Code:
-(defgroup udh-relative-line-numbers nil
+(defgroup udh-line-numbers nil
   "Show relative line numbers in the margin at regular intervals."
   :group 'convenience
-  :prefix "udh-relative-line-numbers-")
+  :prefix "udh-line-numbers-")
 
-(defvar udh-relative-line-numbers-mod-value 5
+(defvar udh-line-numbers-mod-value 5
   "The line period of relative line numbers")
-(make-variable-buffer-local 'udh-relative-line-numbers-mod-value)
+(make-variable-buffer-local 'udh-line-numbers-mod-value)
 
-(defcustom udh-relative-line-numbers-conditional #'udh-relative-line-numbers-mod
+(defcustom udh-line-numbers-conditional #'udh-line-numbers-mod
   "The funciton used to decide which lines should be given as a relitive position.
 The funciton should take one integer argument: the line's distance, in
 lines, from the current line, and return a boolean."
   :type 'function
-  :group 'udh-relative-line-numbers)
+  :group 'udh-line-numbers)
 
 ;;;###autoload
-(define-minor-mode udh-relative-line-numbers-mode
+(define-minor-mode udh-line-numbers-mode
   "Display relative line number in the left margin at
 regular increments.
 
@@ -63,31 +63,27 @@ mode if ARG is omitted or nil, and toggle it if the ERG is `toggle'."
   :init-value nil
   :lighter ""
   :keymap nil
-  (udh-relative-line-numbers--off)
-  (when udh-relative-line-numbers-mode
-    (udh-relative-line-numbers--on)))
+  (udh-line-numbers--off)
+  (when udh-line-numbers-mode
+    (udh-line-numbers--on)))
 
 ;;;###autoload
-(define-globalized-minor-mode global-udh-relative-line-numbers-mode
-  udh-relative-line-numbers-mode
+(define-globalized-minor-mode global-udh-line-numbers-mode
+  udh-line-numbers-mode
   (lambda ()
     (unless (minibufferp)
-      (udh-relative-line-numbers-mode))))
+      (udh-line-numbers-mode))))
 
 ;;needs updating
-(defun udh-relative-line-numbers--on ()
-  "Set up `udh-relative-line-numbers-mode'."
-  (relative-line-numbers-mode 1)
-  (setq relative-line-numbers-format 'udh-relative-line-numbers-format))
+(defun udh-line-numbers--on ()
+  "Set up `udh-line-numbers-mode'.")
 
 ;;needs updating
-(defun udh-relative-line-numbers--off ()
-  "Tear down `udh-relative-line-numbers-mode'."
-  (relative-line-numbers-mode 0)
-  (setq relative-line-numbers-format 'relative-line-numbers-default-format))
+(defun udh-line-numbers--off ()
+  "Tear down `udh-line-numbers-mode'.")
 
-(defun udh-relative-line-numbers-mod (v)
-    (= 0 (mod v udh-relative-line-numbers-mod-value)))
+(defun udh-line-numbers-mod (v)
+    (= 0 (mod v udh-line-numbers-mod-value)))
 
 ;;needs renaming
 (defun rpad (s n)
@@ -95,12 +91,12 @@ mode if ARG is omitted or nil, and toggle it if the ERG is `toggle'."
       s
     (concat (rpad s (- n 1)) " ")))
 
-(defun udh-linenumber-calc-fmt (line curline maxlen)
-  (if (funcall udh-relative-line-numbers-conditional (abs (- line curline)))
+(defun udh-line-number-calc-fmt (line curline maxlen)
+  (if (funcall udh-line-numbers-conditional (abs (- line curline)))
       (format (format " %%%ds" maxlen) (abs (- line curline)))
     (rpad (number-to-string line) (1+ maxlen))))
 
-(defun linum-update-window (win)
+(defun udh-linum-update-window (win)
   "Update line numbers for the portion visible in window WIN."
   (let ((curline (line-number-at-pos))
 	(maxlen (length (number-to-string (count-lines (point-min) (point-max))))))
@@ -118,7 +114,7 @@ mode if ARG is omitted or nil, and toggle it if the ERG is `toggle'."
       ;; line visible in this window, if necessary.
       (while (and (not (eobp)) (< (point) limit))
 	(let* ((str (if fmt
-			(propertize (udh-linenumber-calc-fmt line curline maxlen) 'face 'linum)
+			(propertize (udh-line-number-calc-fmt line curline maxlen) 'face 'linum)
 		      (funcall linum-format line)))
 	       (visited (catch 'visited
 			  (dolist (o (overlays-in (point) (point)))
@@ -144,5 +140,12 @@ mode if ARG is omitted or nil, and toggle it if the ERG is `toggle'."
 	(setq line (1+ line)))
       (set-window-margins win width (cdr (window-margins win))))))
 
-(provide 'udh-relative-line-numbers)
+(defun udh-linum-update-window-advice (original-function win)
+  (if (bound-and-true-p udh-line-numbers-mode)
+      (udh-linum-update-window win)
+    (funcall original-function win)))
+
+(advice-add 'linum-update-window :around #'udh-linum-update-window-advice)
+
+(provide 'udh-line-numbers)
 

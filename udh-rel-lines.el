@@ -74,11 +74,9 @@ mode if ARG is omitted or nil, and toggle it if the ERG is `toggle'."
     (unless (minibufferp)
       (udh-line-numbers-mode))))
 
-;;needs updating
+;;these should chechk if linummode is active and enable/disable it if needed
 (defun udh-line-numbers--on ()
   "Set up `udh-line-numbers-mode'.")
-
-;;needs updating
 (defun udh-line-numbers--off ()
   "Tear down `udh-line-numbers-mode'.")
 
@@ -96,6 +94,8 @@ mode if ARG is omitted or nil, and toggle it if the ERG is `toggle'."
       (format (format " %%%ds" maxlen) (abs (- line curline)))
     (rpad (number-to-string line) (1+ maxlen))))
 
+;;this needs hooks adding
+;;has a bug if usd to view a buffer in more than one window (are those the right terms?)
 (defun udh-linum-update-window (win)
   "Update line numbers for the portion visible in window WIN."
   (let ((curline (line-number-at-pos))
@@ -105,7 +105,7 @@ mode if ARG is omitted or nil, and toggle it if the ERG is `toggle'."
 	  (limit (window-end win t))
 	  (fmt (cond ((stringp linum-format) linum-format)
 		     ((eq linum-format 'dynamic)
-		      (let ((w (length (number-to-string
+		      (elt ((w (length (number-to-string
 					(count-lines (point-min) (point-max))))))
 			(concat "%" (number-to-string w) "d")))))
 	  (width 0))
